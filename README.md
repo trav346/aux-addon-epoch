@@ -1,4 +1,4 @@
-# aux - WoW 3.3.5a AddOn
+# aux - WoW 3.3.5a Project Epoch AddOn
 
 The most advanced auction house addOn for the 3.3.5a Project Epoch client with some features more advanced than anything even on retail. This version has arithmetic fixes.
 
