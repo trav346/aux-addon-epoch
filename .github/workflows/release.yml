@@ -34,7 +34,9 @@ jobs:
           # Generate a simple changelog from recent commits
           echo "## What's Changed" > changelog_content.md
           echo "" >> changelog_content.md
-          git log --pretty=format:"* %s (%h)" HEAD~10..HEAD >> changelog_content.md
+          # Get the last 10 commits or all commits if less than 10
+          git log --pretty=format:"* %s (%h)" -10 >> changelog_content.md || echo "* Initial release" >> changelog_content.md
+          echo "" >> changelog_content.md
           echo "" >> changelog_content.md
           echo "**Full Changelog**: https://github.com/${{ github.repository }}/commits/v${{ github.event.inputs.version }}" >> changelog_content.md
           
