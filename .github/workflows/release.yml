@@ -1,0 +1,66 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.5)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Update version in .toc file
+        run: |
+          sed -i "s/## Version: .*/## Version: ${{ github.event.inputs.version }}/" aux-addon.toc
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add aux-addon.toc
+          git diff --staged --quiet || git commit -m "Bump version to ${{ github.event.inputs.version }}"
+      
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          # Generate a simple changelog from recent commits
+          echo "## What's Changed" > changelog_content.md
+          echo "" >> changelog_content.md
+          git log --pretty=format:"* %s (%h)" HEAD~10..HEAD >> changelog_content.md
+          echo "" >> changelog_content.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/commits/v${{ github.event.inputs.version }}" >> changelog_content.md
+          
+      - name: Prepare addon package
+        run: |
+          # Create a clean addon directory named "aux-addon" (required for WoW)
+          mkdir -p aux-addon
+          
+          # Copy all addon files except dev/git files
+          rsync -av --exclude='.git*' \
+                    --exclude='*.md' \
+                    --exclude='.github' \
+                    --exclude='*.backup*' \
+                    --exclude='*.bak' \
+                    ./ aux-addon/
+          
+          # Create the zip file
+          zip -r aux-addon-epoch-${{ github.event.inputs.version }}.zip aux-addon
+      
+      - name: Create Release with Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: Release v${{ github.event.inputs.version }}
+          body_path: changelog_content.md
+          draft: false
+          prerelease: false
+          files: aux-addon-epoch-${{ github.event.inputs.version }}.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
